@@ -1,6 +1,8 @@
 '''
-python3 modules/detect_object_phone_slot/script_augment_labelimg.py
+python3 modules/detect_object_phone_slot/script_augment_labelimg.py \
+    dataset/model_object_detect_phone_slot/data/test 300    
 '''
+import sys
 import os
 import cv2
 import imgaug.augmenters as iaa
@@ -9,11 +11,12 @@ import xml.etree.ElementTree as ET
 from imgaug.augmentables.bbs import BoundingBox, BoundingBoxesOnImage
 
 # Init
-K = 100
-src_path = 'tmp'
-dst_path = 'tmp'
-image_path = 'tmp/chess.jpg'
-xml_path = 'tmp/chess.xml'
+M = int(sys.argv[2])
+src_path = sys.argv[1]
+dst_path = 'dst'
+image_files  = []
+xml_files = []
+image_tails = ["jpg","png","jpeg"]
 
 def extract_bounding_boxes(xml_file):
     tree = ET.parse(xml_file)
@@ -117,27 +120,56 @@ my_augmenter = iaa.Sequential([
     ], random_order=True) # apply augmenters in random order
 
 if __name__ == "__main__":
+    
     print('Import successful!')
     
-    # Read image
-    img = cv2.imread(image_path)
-    H, W, _ = img.shape
+    # Create debug path
+    if not os.path.exists(dst_path):
+        os.mkdir(dst_path)
+        
+    # Check files
+    files = os.listdir(src_path)
     
-    # Read annotation
-    bounding_boxes = extract_bounding_boxes(xml_path)
+    # check image file
+    for file in files:
+        file_name = file.split(".")[0]
+        file_tail = file.split(".")[-1]
+        if file_tail in image_tails:
+            image_files.append(file)
+            xml_files.append(file_name + '.xml')
+            
+    # Calculate image_augmented per image
+    N = len(image_files)
+    k = int(M/N)
     
-    augmented_list = [my_augmenter(image = img, bounding_boxes = bounding_boxes) for _ in range(K)]
-    
-    for i in range(K):
+    for i in range(N):
+        print(f'({i+1}/{N}) augment image={image_files[i]} xml_file={xml_files[i]}')
         
-        image_name = f'augmented_{i}.jpg'
-        image_path = os.path.join(dst_path, image_name)
-        xml_path = os.path.join(dst_path, f'augmented_{i}.xml')
+        file_name = image_files[i].split(".")[0] 
+        image_path = os.path.join(src_path, image_files[i])
+        xml_path = os.path.join(src_path, xml_files[i]) 
         
-        cv2.imwrite(image_path,augmented_list[i][0])
+        # Read image
+        img = cv2.imread(image_path)
+        H, W, _ = img.shape
         
-        export_to_xml(image_name, W, H, augmented_list[i][1], xml_path)
+        # Read annotation
+        bounding_boxes = extract_bounding_boxes(xml_path)
         
-        print(f'exported {i}/{K}')
+        # create list of augmented
+        augmented_list = [my_augmenter(image = img, bounding_boxes = bounding_boxes) for _ in range(k)]
         
-    print('Export successful!')
+        for j in range(k):
+            
+            image_name = 'augmented_' + file_name + '.jpg'
+            xml_name = 'augmented_' + file_name + '.xml'
+            image_path = os.path.join(dst_path, image_name)
+            augmented_xml_path = os.path.join(dst_path, xml_name)
+            
+            cv2.imwrite(image_path,augmented_list[j][0])
+            
+            export_to_xml(image_name, W, H, augmented_list[j][1], augmented_xml_path)
+            
+            #print(f'exported {i}/{k}')
+        
+    print('Augment successful!')

@@ -1,6 +1,6 @@
 '''
 python3 modules/detect_phone_slot/script_augment_labelme.py \
-    dataset/model_detect_phone_slot/phone_slot/data2/train 300
+    dataset/model_detect_phone_slot/phone_slot/data2/val 300
 '''
 import os
 import cv2
@@ -79,11 +79,13 @@ def make_annotation(image_name,img,polys):
     return json_content
 
 # initialize
+M = int(sys.argv[2])
 image_files  = []
 json_files = []
 image_tails = ["jpg","png","jpeg"]
 annotation_dir = sys.argv[1]
-M = int(sys.argv[2])
+src_path = sys.argv[1]
+dst_path = 'dst'
 
 # instance of augmenter
 my_augmenter = iaa.Sequential([
@@ -112,24 +114,26 @@ my_augmenter = iaa.Sequential([
     iaa.Rotate((-3,3))
     ], random_order=True) # apply augmenters in random order
 
-src_path = sys.argv[1]
-dst_path = 'dst'
-if not os.path.exists(dst_path):
-    os.mkdir(dst_path)
-
-files = os.listdir(annotation_dir)
-
-# check image file
-for file in files:
-    file_name = file.split(".")[0]
-    file_tail = file.split(".")[-1]
-    if file_tail in image_tails:
-        image_files.append(file)
-        json_files.append(file_name + '.json')
-
-
 if __name__ == "__main__":
+    
+    print('Import successful!')
 
+    # Create debug path
+    if not os.path.exists(dst_path):
+        os.mkdir(dst_path)
+    
+    # Check files
+    files = os.listdir(annotation_dir)
+    
+    # check image file
+    for file in files:
+        file_name = file.split(".")[0]
+        file_tail = file.split(".")[-1]
+        if file_tail in image_tails:
+            image_files.append(file)
+            json_files.append(file_name + '.json')
+    
+    # Calculate image_augmented per image
     N = len(image_files)
     k = int(M/N)
 
@@ -160,3 +164,5 @@ if __name__ == "__main__":
             current_json_content = make_annotation(image_name, img_augmented, polys_augmented)
             with open(os.path.join(dst_path,image_name.replace('jpg','json')),'w') as json_file:
                 json.dump(current_json_content, json_file, indent=2)
+                
+    print('Augment successful!')
