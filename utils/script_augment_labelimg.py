@@ -1,6 +1,6 @@
 '''
 python3 modules/detect_object_phone_slot/script_augment_labelimg.py \
-    dataset/model_object_detect_phone_slot/data/test 300    
+    dataset/model_object_detect_phone_slot/data/val 100    
 '''
 import sys
 import os
@@ -116,7 +116,7 @@ my_augmenter = iaa.Sequential([
     # which can end up changing the color of the images.
     iaa.Multiply((0.9, 1.1), per_channel=0.05),
     # Apply rotate
-    iaa.Rotate((-10,10))
+    iaa.Rotate((-4,4))
     ], random_order=True) # apply augmenters in random order
 
 if __name__ == "__main__":
@@ -161,8 +161,8 @@ if __name__ == "__main__":
         
         for j in range(k):
             
-            image_name = 'augmented_' + file_name + '.jpg'
-            xml_name = 'augmented_' + file_name + '.xml'
+            image_name = 'augmented_' +str(j) + '_' + file_name + '.jpg'
+            xml_name = 'augmented_' +str(j) + '_' + file_name + '.xml'
             image_path = os.path.join(dst_path, image_name)
             augmented_xml_path = os.path.join(dst_path, xml_name)
             
